@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
@@ -55,16 +56,34 @@ class OrderController extends Controller
                 'error' => $validator->errors()->first(null)
             ], 400);
         }
-        $storeOrder = Order::create([
-            'car_id' => $request->car_id,
-            'order_date' => $request->order_date,
-            'pickup_date' => $request->pickup_date,
-            'dropoff_date' => $request->dropoff_date,
-            'pickup_location' => $request->pickup_location,
-            'dropoff_location' => $request->dropoff_location
-        ]);
 
-        return response()->json(['messages' => 'Data berhasil ditambahkan'],200);
+       //check value request pickup_date and dropoff_date already exists or not
+        $jadwals = DB::table('orders')
+            ->where('car_id', $request->car_id)
+            ->where(function ($query) use ($request) {
+                $query->whereBetween('pickup_date', [$request->pickup_date, $request->dropoff_date])
+                    ->orWhereBetween('dropoff_date', [$request->pickup_date, $request->dropoff_date]);
+            })
+            ->count();
+
+        if ($jadwals == 0)
+        {
+            $storeOrder = Order::create([
+                        'car_id' => $request->car_id,
+                        'order_date' => $request->order_date,
+                        'pickup_date' => $request->pickup_date,
+                        'dropoff_date' => $request->dropoff_date,
+                        'pickup_location' => $request->pickup_location,
+                        'dropoff_location' => $request->dropoff_location
+            ]);
+            return response()->json(['messages' => 'Data berhasil ditambahkan'],200);
+
+        }
+        else{
+            return response()->json(['error' => 'Terdapat tanggal yang sama di tanggal pickup atau drop off']);
+
+        }
+
     }
 
     /**

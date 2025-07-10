@@ -44,7 +44,6 @@ class CarController extends Controller
             'day_rate' => 'required|numeric',
             'month_rate' => 'required|numeric',
             'image' => 'required|file|mimes:jpg,jpeg,png|max:5120',
-
         ];
 
         $validator = Validator::make($request->all(), $rules);
